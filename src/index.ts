@@ -14,7 +14,7 @@ app.get('/api/health', (_: Request, res: Response) => {
   res.json({
     ok: true,
     message: `Backend is up and running on port ${PORT}`,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toDateString()
   });
 });
 
