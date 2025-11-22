@@ -6,8 +6,8 @@ export interface IGame extends Document {
   name: string;
 
   coverImageUrl?: string;
-  genres?: string[];
-  tags?: string[];
+  genres: string[];
+  tags: string[];
   platform: string;
   source: string;
   totalPlaytimeMinutes: number;
@@ -25,7 +25,6 @@ const GameSchema = new Schema<IGame>(
     playniteId: {
       type: String,
       required: true,
-      unique: true,
       trim: true
     },
     name: {
@@ -73,5 +72,8 @@ const GameSchema = new Schema<IGame>(
 // Index for efficient queries
 // Unique per user per Playnite game
 GameSchema.index({ userId: 1, playniteId: 1 }, { unique: true });
+GameSchema.index({ userId: 1, lastPlayedAt: -1 });
+GameSchema.index({ userId: 1, totalPlaytimeMinutes: -1 });
+
 
 export const Game = model<IGame>('Game', GameSchema);
