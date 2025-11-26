@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { Game } from '../models/Game';
+import { getOrCreateDefaultUser } from '../services/userService';
 
-const HARD_CODED_USER_ID = 'pushpak'; // for now
-
-export async function createGame(req: Request, res: Response, next: NextFunction) {
+export async function createGame(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const {
       playniteId,
@@ -24,13 +27,16 @@ export async function createGame(req: Request, res: Response, next: NextFunction
       });
     }
 
+    // TODO: remove the logic of default user
+    const userId = await getOrCreateDefaultUser();
+
     const game = await Game.findOneAndUpdate(
       {
-        userId: HARD_CODED_USER_ID,
+        userId,
         playniteId
       },
       {
-        userId: HARD_CODED_USER_ID,
+        userId,
         playniteId,
         name,
         coverImageUrl,
@@ -39,7 +45,9 @@ export async function createGame(req: Request, res: Response, next: NextFunction
         platform,
         source,
         // if provided, override defaults
-        ...(typeof totalPlaytimeMinutes === 'number' && { totalPlaytimeMinutes }),
+        ...(typeof totalPlaytimeMinutes === 'number' && {
+          totalPlaytimeMinutes
+        }),
         ...(lastPlayedAt && { lastPlayedAt })
       },
       {
@@ -58,9 +66,14 @@ export async function createGame(req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function listGames(_req: Request, res: Response, next: NextFunction) {
+export async function listGames(
+  _req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
-    const games = await Game.find({ userId: HARD_CODED_USER_ID })
+    const userId = await getOrCreateDefaultUser();
+    const games = await Game.find({ userId })
       .sort({ lastPlayedAt: -1, name: 1 })
       .lean();
 

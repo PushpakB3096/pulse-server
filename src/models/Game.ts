@@ -1,7 +1,7 @@
-import { Schema, Document, model } from 'mongoose';
+import { Schema, Document, model, Types } from 'mongoose';
 
 export interface IGame extends Document {
-  userId: string;
+  userId: Types.ObjectId; // Reference to User document
   playniteId: string; // Unique identifier from Playnite extension
   name: string;
 
@@ -11,7 +11,7 @@ export interface IGame extends Document {
   platform: string;
   source: string;
   totalPlaytimeMinutes: number;
-  lastPlayedAt?: Date;
+  lastPlayedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,7 +19,8 @@ export interface IGame extends Document {
 const GameSchema = new Schema<IGame>(
   {
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'User',
       required: true
     },
     playniteId: {
@@ -69,11 +70,11 @@ const GameSchema = new Schema<IGame>(
   }
 );
 
-// Index for efficient queries
 // Unique per user per Playnite game
 GameSchema.index({ userId: 1, playniteId: 1 }, { unique: true });
+
+// Common query patterns
 GameSchema.index({ userId: 1, lastPlayedAt: -1 });
 GameSchema.index({ userId: 1, totalPlaytimeMinutes: -1 });
-
 
 export const Game = model<IGame>('Game', GameSchema);
