@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { connectToDatabase } from './db';
+import routes from './routes';
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.get('/api/health', (_: Request, res: Response) => {
     timestamp: new Date().toDateString()
   });
 });
+
+// all API routes
+app.use('/api', routes);
 
 async function start() {
   try {
