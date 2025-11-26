@@ -2,8 +2,8 @@ import { User } from '../models/User';
 import { Playlist } from '../models/Playlist';
 import { Types } from 'mongoose';
 
-const DEFAULT_USER_EMAIL = 'default@user.com';
-const DEFAULT_USER_DISPLAY_NAME = 'Default User';
+export const DEFAULT_USER_EMAIL = 'default@user.com';
+export const DEFAULT_USER_DISPLAY_NAME = 'Default User';
 
 const SYSTEM_DEFAULT_PLAYLISTS = [
   { name: 'Playing', slug: 'playing', type: 'default' as const },
