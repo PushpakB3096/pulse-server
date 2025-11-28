@@ -85,3 +85,12 @@ export async function listGames(
     next(err);
   }
 }
+
+export async function syncGames(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  console.log('Received games:', req.body);
+  return res.status(200).json({ ok: true });
+}

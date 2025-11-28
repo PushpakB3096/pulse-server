@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { createGame, listGames } from '../controllers/gameController';
+import {
+  createGame,
+  listGames,
+  syncGames
+} from '../controllers/gameController';
 
 const router = Router();
 
@@ -8,5 +12,8 @@ router.post('/', createGame);
 
 // GET /api/games
 router.get('/', listGames);
+
+// POST /api/games/sync
+router.post('/sync', syncGames);
 
 export default router;
