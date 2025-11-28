@@ -1,70 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Game } from '../models/Game';
 import { getOrCreateDefaultUser } from '../services/userService';
-
-export async function createGame(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const {
-      playniteId,
-      name,
-      coverImageUrl,
-      genres,
-      tags,
-      platform,
-      source,
-      totalPlaytimeMinutes,
-      lastPlayedAt
-    } = req.body;
-
-    if (!playniteId || !name || !platform || !source) {
-      return res.status(400).json({
-        success: false,
-        message: 'playniteId, name, platform, and source are required'
-      });
-    }
-
-    // TODO: remove the logic of default user
-    const userId = await getOrCreateDefaultUser();
-
-    const game = await Game.findOneAndUpdate(
-      {
-        userId,
-        playniteId
-      },
-      {
-        userId,
-        playniteId,
-        name,
-        coverImageUrl,
-        genres,
-        tags,
-        platform,
-        source,
-        // if provided, override defaults
-        ...(typeof totalPlaytimeMinutes === 'number' && {
-          totalPlaytimeMinutes
-        }),
-        ...(lastPlayedAt && { lastPlayedAt })
-      },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true
-      }
-    );
-
-    return res.status(201).json({
-      success: true,
-      data: game
-    });
-  } catch (err) {
-    next(err);
-  }
-}
+import { upsertGameForUser } from '../services/gameService';
 
 export async function listGames(
   _req: Request,
@@ -86,11 +23,90 @@ export async function listGames(
   }
 }
 
+export async function createGame(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const {
+      playniteId,
+      name,
+      coverImageUrl,
+      genres,
+      tags,
+      platform,
+      source,
+      totalPlaytimeMinutes,
+      lastPlayedAt
+    } = req.body;
+
+    // TODO: remove the logic of default user
+    const userId = await getOrCreateDefaultUser();
+
+    const game = await upsertGameForUser(userId, {
+      playniteId,
+      name,
+      coverImageUrl,
+      genres,
+      tags,
+      platform,
+      source,
+      totalPlaytimeMinutes,
+      lastPlayedAt
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: game
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function syncGames(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  console.log('Received games:', req.body);
-  return res.status(200).json({ ok: true });
+  console.log('Received games:', {
+    games: JSON.stringify(req.body.games, null, 2)
+  });
+
+  try {
+    const { games } = req.body;
+
+    if (!Array.isArray(games) || games.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'games must be a non-empty array'
+      });
+    }
+
+    const userId = await getOrCreateDefaultUser(); // later this comes from auth
+
+    const results = await Promise.all(
+      games.map(g =>
+        upsertGameForUser(userId, {
+          playniteId: g.playniteId,
+          name: g.name,
+          coverImageUrl: g.coverImageUrl,
+          genres: g.genres,
+          tags: g.tags,
+          platform: g.platform,
+          source: g.source,
+          totalPlaytimeMinutes: g.totalPlaytimeMinutes,
+          lastPlayedAt: g.lastPlayedAt
+        })
+      )
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: results.length
+    });
+  } catch (err) {
+    next(err);
+  }
 }
