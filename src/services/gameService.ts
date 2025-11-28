@@ -29,8 +29,6 @@ export async function upsertGameForUser(
     lastPlayedAt
   } = payload;
 
-  console.log(1111, {payload: JSON.stringify(payload, null, 2)});
-
   if (!playniteId || !name || !platform || !source) {
     throw new Error('playniteId, name, platform, and source are required');
   }
@@ -51,7 +49,26 @@ export async function upsertGameForUser(
   }
 
   if (lastPlayedAt) {
-    update.lastPlayedAt = lastPlayedAt;
+    let dateValue: Date | null = null;
+
+    if (lastPlayedAt instanceof Date) {
+      dateValue = lastPlayedAt;
+    } else if (typeof lastPlayedAt === 'string') {
+      // Clean up date string (remove spaces around colons in time and timezone)
+      // Handles cases like "2025-07-31T21: 57: 15.301+05: 30" -> "2025-07-31T21:57:15.301+05:30"
+      const cleanedDateString = lastPlayedAt
+        .replace(/:\s+/g, ':') // Remove spaces after colons
+        .replace(/\s+:/g, ':'); // Remove spaces before colons (just in case)
+      dateValue = new Date(cleanedDateString);
+    }
+
+    // Only set if date is valid
+    if (dateValue && !isNaN(dateValue.getTime())) {
+      update.lastPlayedAt = dateValue;
+    } else if (lastPlayedAt === null) {
+      // Explicitly allow null to clear the field
+      update.lastPlayedAt = null;
+    }
   }
 
   return Game.findOneAndUpdate({ userId, playniteId }, update, {

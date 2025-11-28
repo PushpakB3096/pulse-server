@@ -70,10 +70,6 @@ export async function syncGames(
   res: Response,
   next: NextFunction
 ) {
-  console.log('Received games:', {
-    games: JSON.stringify(req.body.games, null, 2)
-  });
-
   try {
     const { games } = req.body;
 
