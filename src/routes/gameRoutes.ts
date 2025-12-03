@@ -7,11 +7,11 @@ import {
 
 const router = Router();
 
-// POST /api/games
-router.post('/', createGame);
-
 // GET /api/games
 router.get('/', listGames);
+
+// POST /api/games
+router.post('/', createGame);
 
 // POST /api/games/sync
 router.post('/sync', syncGames);
