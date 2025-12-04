@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import { Game } from '../models/Game';
 import { getOrCreateDefaultUser } from '../services/userService';
 import { upsertGameForUser } from '../services/gameService';
+import { Playlist } from '../models/Playlist';
 
 export async function listGames(
   _req: Request,
@@ -12,11 +14,56 @@ export async function listGames(
     const userId = await getOrCreateDefaultUser();
     const games = await Game.find({ userId })
       .sort({ lastPlayedAt: -1, name: 1 })
+      .select('name genres platform totalPlaytimeMinutes lastPlayedAt')
       .lean();
 
     return res.json({
       success: true,
       data: games
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getGameDetails(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+    const userId = await getOrCreateDefaultUser();
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid game id' });
+    }
+
+    const game = await Game.findOne({ _id: id, userId }).lean();
+
+    if (!game) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Game not found' });
+    }
+
+    // Playlists this game is in
+    const playlists = await Playlist.find({
+      userId,
+      gameIds: new mongoose.Types.ObjectId(id)
+    })
+      .select('_id name slug type isSystemDefault')
+      .sort({ isSystemDefault: -1, name: 1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        game,
+        playlists
+      }
     });
   } catch (err) {
     next(err);
