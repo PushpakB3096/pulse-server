@@ -56,8 +56,8 @@ export async function getGameDetails(
       userId,
       gameIds: new mongoose.Types.ObjectId(id)
     })
-      .select('_id name slug type isSystemDefault')
-      .sort({ isSystemDefault: -1, name: 1 })
+      .select('_id name slug')
+      .sort({ name: 1 })
       .lean();
 
     return res.status(200).json({

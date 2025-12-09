@@ -9,9 +9,7 @@ export async function getPlaylists(
 ) {
   try {
     const userId = await getOrCreateDefaultUser();
-    const playlists = await Playlist.find({ userId })
-      .sort({ isSystemDefault: -1, name: 1 })
-      .lean();
+    const playlists = await Playlist.find({ userId }).sort({ name: 1 }).lean();
 
     return res.status(200).json({
       success: true,

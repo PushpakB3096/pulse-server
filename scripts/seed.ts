@@ -30,8 +30,6 @@ async function seed() {
       userId: user._id,
       name: 'Playing',
       slug: 'playing',
-      type: 'default',
-      isSystemDefault: true,
       gameIds: []
     });
 
@@ -39,8 +37,6 @@ async function seed() {
       userId: user._id,
       name: 'Want',
       slug: 'want',
-      type: 'default',
-      isSystemDefault: true,
       gameIds: []
     });
 
@@ -48,8 +44,6 @@ async function seed() {
       userId: user._id,
       name: 'Finished',
       slug: 'finished',
-      type: 'default',
-      isSystemDefault: true,
       gameIds: []
     });
 
@@ -61,8 +55,6 @@ async function seed() {
       userId: user._id,
       name: 'DNF',
       slug: 'dnf',
-      type: 'custom',
-      isSystemDefault: false,
       gameIds: []
     });
     console.log('Created custom playlist: DNF');

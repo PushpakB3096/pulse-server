@@ -6,9 +6,9 @@ export const DEFAULT_USER_EMAIL = 'default@user.com';
 export const DEFAULT_USER_DISPLAY_NAME = 'Default User';
 
 const SYSTEM_DEFAULT_PLAYLISTS = [
-  { name: 'Playing', slug: 'playing', type: 'default' as const },
-  { name: 'Want', slug: 'want', type: 'default' as const },
-  { name: 'Finished', slug: 'finished', type: 'default' as const }
+  { name: 'Playing', slug: 'playing' },
+  { name: 'Want', slug: 'want' },
+  { name: 'Finished', slug: 'finished' }
 ];
 
 /**
@@ -30,8 +30,6 @@ export async function getOrCreateDefaultUser(): Promise<Types.ObjectId> {
       userId: user!._id,
       name: playlist.name,
       slug: playlist.slug,
-      type: playlist.type,
-      isSystemDefault: true,
       gameIds: []
     }));
 
@@ -40,4 +38,3 @@ export async function getOrCreateDefaultUser(): Promise<Types.ObjectId> {
 
   return user._id;
 }
-

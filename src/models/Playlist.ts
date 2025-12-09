@@ -1,14 +1,10 @@
 import { Schema, Document, model, Types } from 'mongoose';
 
-export type PlaylistType = 'default' | 'custom';
-
 export interface IPlaylist extends Document {
-  userId: Types.ObjectId; // Reference to User document
+  userId: Types.ObjectId;
   name: string;
-  slug: string; // Normalized slug (lowercase, hyphenated)
-  type: PlaylistType;
-  isSystemDefault: boolean;
-  gameIds: Types.ObjectId[]; // References to Game documents
+  slug: string;
+  gameIds: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,15 +27,6 @@ const PlaylistSchema = new Schema<IPlaylist>(
       trim: true,
       lowercase: true
     },
-    type: {
-      type: String,
-      enum: ['default', 'custom'],
-      default: 'custom'
-    },
-    isSystemDefault: {
-      type: Boolean,
-      default: false
-    },
     gameIds: {
       type: [Schema.Types.ObjectId],
       ref: 'Game',
@@ -47,7 +34,7 @@ const PlaylistSchema = new Schema<IPlaylist>(
     }
   },
   {
-    timestamps: true // Automatically adds createdAt and updatedAt
+    timestamps: true
   }
 );
 
