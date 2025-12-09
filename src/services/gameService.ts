@@ -71,9 +71,18 @@ export async function upsertGameForUser(
     }
   }
 
-  return Game.findOneAndUpdate({ userId, playniteId }, update, {
-    new: true,
-    upsert: true,
-    runValidators: true
-  });
+  return Game.findOneAndUpdate(
+    { userId, playniteId },
+    {
+      $set: update,
+      $setOnInsert: {
+        status: 'NOT_STARTED'
+      }
+    },
+    {
+      new: true,
+      upsert: true,
+      runValidators: true
+    }
+  );
 }

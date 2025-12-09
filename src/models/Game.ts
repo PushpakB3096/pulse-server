@@ -1,12 +1,22 @@
 import { Schema, Document, model, Types } from 'mongoose';
 
+export const gameStatusValues = [
+  'NOT_STARTED',
+  'PLAYING',
+  'ON_HOLD',
+  'COMPLETED',
+  'DROPPED'
+] as const;
+
+export type GameStatus = (typeof gameStatusValues)[number];
+
 export interface IGame extends Document {
   userId: Types.ObjectId; // Reference to User document
   playniteId: string; // Unique identifier from Playnite extension
   name: string;
-
   coverImageUrl?: string;
   genres: string[];
+  status?: GameStatus;
   tags: string[];
   platform: string;
   source: string;
@@ -40,6 +50,13 @@ const GameSchema = new Schema<IGame>(
     genres: {
       type: [String],
       default: []
+    },
+    status: {
+      type: String,
+      enum: gameStatusValues,
+      default: 'NOT_STARTED',
+      required: true,
+      index: true
     },
     tags: {
       type: [String],

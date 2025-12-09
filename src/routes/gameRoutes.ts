@@ -3,7 +3,8 @@ import {
   createGame,
   getGameDetails,
   listGames,
-  syncGames
+  syncGames,
+  updateGameStatus
 } from '../controllers/gameController';
 
 const router = Router();
@@ -19,5 +20,8 @@ router.post('/', createGame);
 
 // POST /api/games/sync
 router.post('/sync', syncGames);
+
+// PATCH /api/games/:id/status
+router.patch('/games/:id/status', updateGameStatus);
 
 export default router;

@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
-import { Game } from '../models/Game';
+import { Game, GameStatus, gameStatusValues } from '../models/Game';
 import { getOrCreateDefaultUser } from '../services/userService';
 import { upsertGameForUser } from '../services/gameService';
 import { Playlist } from '../models/Playlist';
+
+type UpdateStatusRequest = Request<{ id: string }, any, { status: GameStatus }>;
 
 export async function listGames(
   _req: Request,
@@ -153,3 +155,40 @@ export async function syncGames(
     next(err);
   }
 }
+
+export const updateGameStatus = async (
+  req: UpdateStatusRequest,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = await getOrCreateDefaultUser();
+
+    if (!gameStatusValues.includes(status as GameStatus)) {
+      return res.status(400).json({
+        error: 'INVALID_STATUS',
+        message: `Status must be one of: ${gameStatusValues.join(', ')}`
+      });
+    }
+
+    const game = await Game.findOneAndUpdate(
+      { _id: id, userId },
+      { status },
+      { new: true }
+    ).lean();
+
+    if (!game) {
+      return res.status(404).json({
+        error: 'GAME_NOT_FOUND'
+      });
+    }
+
+    return res.json(game);
+  } catch (err) {
+    console.error('updateGameStatus error', err);
+    return res.status(500).json({
+      error: 'INTERNAL_SERVER_ERROR'
+    });
+  }
+};
