@@ -81,6 +81,7 @@ export async function createGame(
     const {
       playniteId,
       name,
+      description,
       coverImageUrl,
       genres,
       tags,
@@ -96,6 +97,7 @@ export async function createGame(
     const game = await upsertGameForUser(userId, {
       playniteId,
       name,
+      description,
       coverImageUrl,
       genres,
       tags,
@@ -132,17 +134,18 @@ export async function syncGames(
     const userId = await getOrCreateDefaultUser(); // later this comes from auth
 
     const results = await Promise.all(
-      games.map(g =>
+      games.map(game =>
         upsertGameForUser(userId, {
-          playniteId: g.playniteId,
-          name: g.name,
-          coverImageUrl: g.coverImageUrl,
-          genres: g.genres,
-          tags: g.tags,
-          platform: g.platform,
-          source: g.source,
-          totalPlaytimeMinutes: g.totalPlaytimeMinutes,
-          lastPlayedAt: g.lastPlayedAt
+          playniteId: game.playniteId,
+          name: game.name,
+          description: game.description,
+          coverImageUrl: game.coverImageUrl,
+          genres: game.genres,
+          tags: game.tags,
+          platform: game.platform,
+          source: game.source,
+          totalPlaytimeMinutes: game.totalPlaytimeMinutes,
+          lastPlayedAt: game.lastPlayedAt
         })
       )
     );

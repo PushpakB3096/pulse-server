@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 export interface GameUpsertInput {
   playniteId: string;
   name: string;
+  description?: string;
   coverImageUrl?: string;
   genres?: string[];
   tags?: string[];
@@ -20,6 +21,7 @@ export async function upsertGameForUser(
   const {
     playniteId,
     name,
+    description,
     coverImageUrl,
     genres,
     tags,
@@ -33,10 +35,11 @@ export async function upsertGameForUser(
     throw new Error('playniteId, name, platform, and source are required');
   }
 
-  const update: any = {
+  const updatedGame: any = {
     userId,
     playniteId,
     name,
+    description,
     coverImageUrl,
     genres,
     tags,
@@ -45,7 +48,7 @@ export async function upsertGameForUser(
   };
 
   if (typeof totalPlaytimeMinutes === 'number') {
-    update.totalPlaytimeMinutes = totalPlaytimeMinutes;
+    updatedGame.totalPlaytimeMinutes = totalPlaytimeMinutes;
   }
 
   if (lastPlayedAt) {
@@ -64,17 +67,17 @@ export async function upsertGameForUser(
 
     // Only set if date is valid
     if (dateValue && !isNaN(dateValue.getTime())) {
-      update.lastPlayedAt = dateValue;
+      updatedGame.lastPlayedAt = dateValue;
     } else if (lastPlayedAt === null) {
       // Explicitly allow null to clear the field
-      update.lastPlayedAt = null;
+      updatedGame.lastPlayedAt = null;
     }
   }
 
   return Game.findOneAndUpdate(
     { userId, playniteId },
     {
-      $set: update,
+      $set: updatedGame,
       $setOnInsert: {
         status: 'NOT_STARTED'
       }

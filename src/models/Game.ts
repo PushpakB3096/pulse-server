@@ -14,6 +14,7 @@ export interface IGame extends Document {
   userId: Types.ObjectId; // Reference to User document
   playniteId: string; // Unique identifier from Playnite extension
   name: string;
+  description?: string;
   coverImageUrl?: string;
   genres: string[];
   status?: GameStatus;
@@ -42,6 +43,11 @@ const GameSchema = new Schema<IGame>(
       type: String,
       required: true,
       trim: true
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: null
     },
     coverImageUrl: {
       type: String,
