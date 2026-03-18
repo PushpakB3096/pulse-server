@@ -7,14 +7,32 @@ import { Playlist } from '../models/Playlist';
 
 type UpdateStatusRequest = Request<{ id: string }, any, { status: GameStatus }>;
 
+/**
+ * Escapes regex metacharacters (. * + ? ^ $ { } ( ) | [ ] \) so the string
+ * can be used safely in a RegExp. The escaped string will match the literal
+ * user input only — e.g. "Halo 2" matches "Halo 2" but "2." will not match
+ * any digit; it will match the literal "2.".
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function listGames(
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
     const userId = await getOrCreateDefaultUser();
-    const games = await Game.find({ userId })
+
+    const filter: Record<string, unknown> = { userId };
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (q) {
+      const escaped = escapeRegex(q);
+      filter.name = { $regex: escaped, $options: 'i' };
+    }
+
+    const games = await Game.find(filter)
       .sort({ lastPlayedAt: -1, name: 1 })
       .select('name genres platform totalPlaytimeMinutes lastPlayedAt')
       .lean();
