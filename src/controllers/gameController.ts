@@ -33,6 +33,7 @@ export async function listGames(
     }
 
     const games = await Game.find(filter)
+      .collation({ locale: 'en', strength: 2 }) // accent-insensitive: "pokemon" matches "Pokémon"
       .sort({ lastPlayedAt: -1, name: 1 })
       .select('name genres platform totalPlaytimeMinutes lastPlayedAt')
       .lean();

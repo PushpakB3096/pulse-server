@@ -100,4 +100,10 @@ GameSchema.index({ userId: 1, playniteId: 1 }, { unique: true });
 GameSchema.index({ userId: 1, lastPlayedAt: -1 });
 GameSchema.index({ userId: 1, totalPlaytimeMinutes: -1 });
 
+// Accent-insensitive name search (e.g. "pokemon" matches "Pokémon")
+GameSchema.index(
+  { userId: 1, name: 1 },
+  { collation: { locale: 'en', strength: 2 } }
+);
+
 export const Game = model<IGame>('Game', GameSchema);
