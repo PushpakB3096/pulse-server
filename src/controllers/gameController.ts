@@ -3,6 +3,11 @@ import mongoose from 'mongoose';
 import { Game, GameStatus, gameStatusValues } from '../models/Game';
 import { getOrCreateDefaultUser } from '../services/userService';
 import { upsertGameForUser } from '../services/gameService';
+import {
+  enqueueEnrichGame,
+  enrichAllGamesForUser,
+  getEnrichmentStatus
+} from '../services/enrichmentService';
 import { Playlist } from '../models/Playlist';
 
 type UpdateStatusRequest = Request<{ id: string }, any, { status: GameStatus }>;
@@ -35,7 +40,9 @@ export async function listGames(
     const games = await Game.find(filter)
       .collation({ locale: 'en', strength: 2 }) // accent-insensitive: "pokemon" matches "Pokémon"
       .sort({ lastPlayedAt: -1, name: 1 })
-      .select('name genres platform totalPlaytimeMinutes lastPlayedAt')
+      .select(
+        'name genres platform totalPlaytimeMinutes lastPlayedAt coverImageUrl'
+      )
       .lean();
 
     return res.json({
@@ -158,20 +165,63 @@ export async function syncGames(
           playniteId: game.playniteId,
           name: game.name,
           description: game.description,
-          coverImageUrl: game.coverImageUrl,
           genres: game.genres,
           tags: game.tags,
           platform: game.platform,
           source: game.source,
           totalPlaytimeMinutes: game.totalPlaytimeMinutes,
-          lastPlayedAt: game.lastPlayedAt
+          lastPlayedAt: game.lastPlayedAt,
+          gameId: game.gameId,
+          pluginId: game.pluginId,
+          links: game.links,
         })
       )
     );
 
+    for (const doc of results) {
+      if (doc?._id) {
+        enqueueEnrichGame(userId, String(doc._id));
+      }
+    }
+
     return res.status(200).json({
       success: true,
       count: results.length
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postEnrichGames(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const userId = await getOrCreateDefaultUser();
+    const { queued, skipped } = await enrichAllGamesForUser(userId);
+    return res.status(200).json({
+      success: true,
+      queued,
+      skipped
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getEnrichmentStatusHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    await getOrCreateDefaultUser();
+    const status = getEnrichmentStatus();
+    return res.status(200).json({
+      success: true,
+      data: status
     });
   } catch (err) {
     next(err);
