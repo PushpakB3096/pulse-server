@@ -12,6 +12,9 @@ export interface GameUpsertInput {
   source: string;
   totalPlaytimeMinutes?: number;
   lastPlayedAt?: Date | string | null;
+  gameId?: string;
+  pluginId?: string;
+  links?: { name: string; url: string }[];
 }
 
 export async function upsertGameForUser(
@@ -28,24 +31,40 @@ export async function upsertGameForUser(
     platform,
     source,
     totalPlaytimeMinutes,
-    lastPlayedAt
+    lastPlayedAt,
+    gameId,
+    pluginId,
+    links
   } = payload;
 
   if (!playniteId || !name || !platform || !source) {
     throw new Error('playniteId, name, platform, and source are required');
   }
 
-  const updatedGame: any = {
+  const updatedGame: Record<string, unknown> = {
     userId,
     playniteId,
     name,
     description,
-    coverImageUrl,
     genres,
     tags,
     platform,
     source
   };
+
+  if (coverImageUrl !== undefined) {
+    updatedGame.coverImageUrl = coverImageUrl;
+  }
+
+  if (gameId !== undefined) {
+    updatedGame.gameId = gameId;
+  }
+  if (pluginId !== undefined) {
+    updatedGame.pluginId = pluginId;
+  }
+  if (links !== undefined) {
+    updatedGame.links = links;
+  }
 
   if (typeof totalPlaytimeMinutes === 'number') {
     updatedGame.totalPlaytimeMinutes = totalPlaytimeMinutes;
