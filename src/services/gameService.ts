@@ -5,6 +5,7 @@ import { Types } from 'mongoose';
 export interface GameUpsertInput {
   playniteId: string;
   name: string;
+  sortingName?: string;
   description?: string;
   coverImageUrl?: string;
   genres?: string[];
@@ -25,6 +26,7 @@ export async function upsertGameForUser(
   const {
     playniteId,
     name,
+    sortingName,
     description,
     coverImageUrl,
     genres,
@@ -42,16 +44,33 @@ export async function upsertGameForUser(
     throw new Error('playniteId, name, platform, and source are required');
   }
 
+  const uid = toObjectId(userId);
+  const existing = await Game.findOne({ userId: uid, playniteId })
+    .select('igdbId description')
+    .lean();
+
+  const shouldPreserveDescription =
+    existing?.igdbId != null &&
+    typeof existing.description === 'string' &&
+    existing.description.trim() !== '';
+
   const updatedGame: Record<string, unknown> = {
-    userId,
+    userId: uid,
     playniteId,
     name,
-    description,
     genres,
     tags,
     platform,
     source
   };
+
+  if (!shouldPreserveDescription) {
+    updatedGame.description = description;
+  }
+
+  if (sortingName !== undefined) {
+    updatedGame.sortingName = sortingName;
+  }
 
   if (coverImageUrl !== undefined) {
     updatedGame.coverImageUrl = coverImageUrl;
@@ -95,7 +114,7 @@ export async function upsertGameForUser(
   }
 
   return Game.findOneAndUpdate(
-    { userId, playniteId },
+    { userId: uid, playniteId },
     {
       $set: updatedGame,
       $setOnInsert: {

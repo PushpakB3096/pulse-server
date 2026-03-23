@@ -170,7 +170,7 @@ export async function syncGames(
   next: NextFunction
 ) {
   try {
-    const { games } = req.body;
+    const { games, fullLibrarySync } = req.body;
 
     if (!Array.isArray(games) || games.length === 0) {
       return res.status(400).json({
@@ -186,6 +186,7 @@ export async function syncGames(
         upsertGameForUser(userId, {
           playniteId: game.playniteId,
           name: game.name,
+          sortingName: game.sortingName,
           description: game.description,
           genres: game.genres,
           tags: game.tags,
@@ -209,9 +210,39 @@ export async function syncGames(
       }
     }
 
+    // Full snapshot from Playnite: remove DB rows for this user whose playniteId is not in the payload.
+    // Scoped by userId; future auth must resolve userId from the session, not the client body.
+    let pruned = 0;
+    if (fullLibrarySync === true) {
+      const payloadIds = [
+        ...new Set(
+          games
+            .map((g: { playniteId?: string }) =>
+              String(g.playniteId ?? '').trim()
+            )
+            .filter(Boolean)
+        )
+      ];
+      const orphans = await Game.find({
+        userId,
+        playniteId: { $nin: payloadIds }
+      })
+        .select('playniteId')
+        .lean();
+
+      for (const row of orphans) {
+        const pid = row.playniteId;
+        if (pid) {
+          await deleteGameByPlayniteIdForUser(userId, pid);
+          pruned += 1;
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      count: results.length
+      count: results.length,
+      ...(fullLibrarySync === true ? { pruned } : {})
     });
   } catch (err) {
     next(err);
