@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import { connectToDatabase } from './db';
 import routes from './routes';
@@ -22,6 +23,22 @@ app.get('/api/health', (_: Request, res: Response) => {
 
 // all API routes
 app.use('/api', routes);
+
+app.use(
+  (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    console.error(err);
+    if (err instanceof mongoose.Error.CastError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid id'
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+);
 
 async function start() {
   try {
