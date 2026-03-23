@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
+import mongoose, { type SortOrder } from 'mongoose';
 import { Game, GameStatus, gameStatusValues } from '../models/Game';
 import { getOrCreateDefaultUser } from '../services/userService';
 import { upsertGameForUser } from '../services/gameService';
@@ -22,16 +22,35 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function getSortingOrder(sortBy: string): Record<string, SortOrder> {
+  if (sortBy === 'name') {
+    return { name: 1 };
+  }
+
+  if (sortBy === 'playtime') {
+    return { totalPlaytimeMinutes: -1, name: 1 };
+  }
+
+  if (sortBy === 'recent') {
+    return { lastPlayedAt: -1, name: 1 };
+  }
+
+  return { lastPlayedAt: -1, name: 1 };
+}
+
 export async function listGames(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
+  const { q: query, sortBy } = req.query;
+  const q = typeof query === 'string' ? query.trim() : '';
+  const sortOrder = getSortingOrder(sortBy as string);
+
   try {
     const userId = await getOrCreateDefaultUser();
-
     const filter: Record<string, unknown> = { userId };
-    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+
     if (q) {
       const escaped = escapeRegex(q);
       filter.name = { $regex: escaped, $options: 'i' };
@@ -39,7 +58,7 @@ export async function listGames(
 
     const games = await Game.find(filter)
       .collation({ locale: 'en', strength: 2 }) // accent-insensitive: "pokemon" matches "Pokémon"
-      .sort({ lastPlayedAt: -1, name: 1 })
+      .sort(sortOrder)
       .select(
         'name genres platform totalPlaytimeMinutes lastPlayedAt coverImageUrl'
       )
