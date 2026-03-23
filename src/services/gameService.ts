@@ -1,4 +1,5 @@
 import { Game } from '../models/Game';
+import { Playlist } from '../models/Playlist';
 import { Types } from 'mongoose';
 
 export interface GameUpsertInput {
@@ -107,4 +108,43 @@ export async function upsertGameForUser(
       runValidators: true
     }
   );
+}
+
+function toObjectId(userId: Types.ObjectId | string): Types.ObjectId {
+  if (userId instanceof Types.ObjectId) {
+    return userId;
+  }
+  return new Types.ObjectId(userId);
+}
+
+/**
+ * Removes a game by Playnite id: pulls its Mongo id from all user playlists, then deletes the game.
+ */
+export async function deleteGameByPlayniteIdForUser(
+  userId: Types.ObjectId | string,
+  playniteId: string
+): Promise<{ deleted: boolean }> {
+  const uid = toObjectId(userId);
+  const trimmed = playniteId?.trim();
+  if (!trimmed) {
+    return { deleted: false };
+  }
+
+  const game = await Game.findOne({ userId: uid, playniteId: trimmed })
+    .select('_id')
+    .lean();
+
+  if (!game?._id) {
+    return { deleted: false };
+  }
+
+  const gameOid = game._id as Types.ObjectId;
+
+  await Playlist.updateMany(
+    { userId: uid, gameIds: gameOid },
+    { $pull: { gameIds: gameOid } }
+  );
+
+  await Game.deleteOne({ _id: gameOid, userId: uid });
+  return { deleted: true };
 }

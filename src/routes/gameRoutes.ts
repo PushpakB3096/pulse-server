@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createGame,
+  deleteGameByPlaynite,
   getEnrichmentStatusHandler,
   getGameDetails,
   listGames,
@@ -20,6 +21,9 @@ router.post('/enrich', postEnrichGames);
 
 // POST /api/games/sync
 router.post('/sync', syncGames);
+
+// DELETE /api/games/by-playnite/:playniteId — must be before GET /:id
+router.delete('/by-playnite/:playniteId', deleteGameByPlaynite);
 
 // GET /api/games/:id
 router.get('/:id', getGameDetails);

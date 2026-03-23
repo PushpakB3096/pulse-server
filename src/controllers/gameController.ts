@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import mongoose, { type SortOrder } from 'mongoose';
 import { Game, GameStatus, gameStatusValues } from '../models/Game';
 import { getOrCreateDefaultUser } from '../services/userService';
-import { upsertGameForUser } from '../services/gameService';
+import {
+  deleteGameByPlayniteIdForUser,
+  upsertGameForUser
+} from '../services/gameService';
 import {
   enqueueEnrichGame,
   enrichAllGamesForUser,
@@ -199,6 +202,9 @@ export async function syncGames(
 
     for (const doc of results) {
       if (doc?._id) {
+        if (doc.igdbId != null && doc.coverImageUrl) {
+          continue;
+        }
         enqueueEnrichGame(userId, String(doc._id));
       }
     }
@@ -207,6 +213,37 @@ export async function syncGames(
       success: true,
       count: results.length
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteGameByPlaynite(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { playniteId } = req.params;
+    const id = typeof playniteId === 'string' ? playniteId.trim() : '';
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'playniteId is required'
+      });
+    }
+
+    const userId = await getOrCreateDefaultUser();
+    const { deleted } = await deleteGameByPlayniteIdForUser(userId, id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Game not found'
+      });
+    }
+
+    return res.status(200).json({ success: true });
   } catch (err) {
     next(err);
   }
