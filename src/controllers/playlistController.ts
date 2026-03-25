@@ -169,7 +169,7 @@ export async function getPlaylistById(
     }
 
     const userId = await getOrCreateDefaultUser();
-    const playlist = await Playlist.findOne({ _id: id, userId }).select('_id name slug gameIds').lean();
+    const playlist = await Playlist.findOne({ _id: id, userId }).select('_id name slug gameIds isSystemDefault').lean();
 
     if (!playlist) {
       return res.status(404).json({
