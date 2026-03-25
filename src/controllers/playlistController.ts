@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { getOrCreateDefaultUser } from '../services/userService';
 import { Playlist } from '../models/Playlist';
+import { Game } from '../models/Game';
 
 type AddGamesBody = { gameId?: unknown; gameIds?: unknown };
 
@@ -146,6 +147,45 @@ export async function removeGameFromPlaylist(
     return res.status(200).json({
       success: true,
       data: playlist
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getPlaylistById(
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid playlist id'
+      });
+    }
+
+    const userId = await getOrCreateDefaultUser();
+    const playlist = await Playlist.findOne({ _id: id, userId }).select('_id name slug gameIds').lean();
+
+    if (!playlist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Playlist not found'
+      });
+    }
+
+    const gameData = await Game.find({ _id: { $in: playlist.gameIds } }).select('playniteId name coverImageUrl platform source totalPlaytimeMinutes lastPlayedAt').lean();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        playlist,
+        gameData
+      }
     });
   } catch (err) {
     next(err);
