@@ -11,7 +11,7 @@ import {
   enrichAllGamesForUser,
   getEnrichmentStatus
 } from '../services/enrichmentService';
-import { Playlist } from '../models/Playlist';
+import { IPlaylist, Playlist } from '../models/Playlist';
 
 type UpdateStatusRequest = Request<{ id: string }, any, { status: GameStatus }>;
 
@@ -46,12 +46,32 @@ export async function listGames(
   res: Response,
   next: NextFunction
 ) {
-  const { q: query, sortBy } = req.query;
+  const { q: query, sortBy, playlistId } = req.query;
   const q = typeof query === 'string' ? query.trim() : '';
   const sortOrder = getSortingOrder(sortBy as string);
+  const userId = await getOrCreateDefaultUser();
+  let playlist: IPlaylist | null = null;
+
+
+  if (playlistId) {
+    if (!mongoose.isValidObjectId(playlistId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid playlist id'
+      });
+    }
+
+    playlist = await Playlist.findOne({ _id: playlistId, userId }).select('_id gameIds').lean() as IPlaylist | null;
+
+    if (!playlist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Playlist not found'
+      });
+    }
+  }
 
   try {
-    const userId = await getOrCreateDefaultUser();
     const filter: Record<string, unknown> = { userId };
 
     if (q) {
@@ -60,6 +80,7 @@ export async function listGames(
     }
 
     const games = await Game.find(filter)
+      .where('_id').nin(playlist?.gameIds || [])
       .collation({ locale: 'en', strength: 2 }) // accent-insensitive: "pokemon" matches "Pokémon"
       .sort(sortOrder)
       .select(
